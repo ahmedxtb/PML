@@ -1,3 +1,5 @@
+# Load library and packages
+
 library(caret)
 
 download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", "pml-training.csv", method = "curl")
