@@ -85,7 +85,7 @@ pml.test <- pml.testing.tidy
 
 At this point our dataset consists in `r ncol(pml.train)` variables wich is way better than our original dataset. To further reduce this number, we look at the correlations between the variables in our dataset.
 
-```{r, cache = TRUE}
+```{r, cache = TRUE, fig.height = 10, fig.width = 10}
 pml.corr <- cor(pml.train[, -53])
 library(corrplot)
 corrplot(pml.corr, method = "color")
@@ -129,7 +129,7 @@ modFit
 
 Now we may review the relative importance of the resulting principal components of the trained model "modFit".
 
-```{r, cache = TRUE}
+```{r, cache = TRUE, fig.height = 10, fig.width = 10}
 varImpPlot(modFit$finalModel, sort = TRUE, main = "Relative importance of PCs")
 ```
 
