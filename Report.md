@@ -1,11 +1,3 @@
----
-output:
-  html_document:
-    fig_height: 11
-    fig_width: 10
-    self_contained: no
-  pdf_document: default
----
 Predictive model for activity recognition of weight lifting exercises
 =================================================================
 
