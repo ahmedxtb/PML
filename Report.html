@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="Content-Style-Type" content="text/css" />
+<meta name="generator" content="pandoc" />
+
+
+
+<title></title>
+
+<script src="Report_files/jquery-1.11.0/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link href="Report_files/bootstrap-2.3.2/css/bootstrap.min.css" rel="stylesheet" />
+<link href="Report_files/bootstrap-2.3.2/css/bootstrap-responsive.min.css" rel="stylesheet" />
+<script src="Report_files/bootstrap-2.3.2/js/bootstrap.min.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<link rel="stylesheet"
+      href="Report_files/highlight/default.css"
+      type="text/css" />
+<script src="Report_files/highlight/highlight.js"></script>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs && document.readyState && document.readyState === "complete") {
+   window.setTimeout(function() {
+      hljs.initHighlighting();
+   }, 0);
+}
+</script>
+
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+<div class="container-fluid main-container">
+
+
+
+
+<div id="predictive-model-for-activity-recognition-of-weight-lifting-exercises" class="section level1">
+<h1>Predictive model for activity recognition of weight lifting exercises</h1>
+<p><strong>by P. Paquay</strong></p>
+</div>
+<div id="summary" class="section level1">
+<h1>Summary</h1>
+<p>Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. In this project, our goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.</p>
+<p>We will fit a model to predict the manner in which the participants did the exercise, to achieve this we will use a random forest algorithm and a 5-fold cross validation. Our predicted results achieve 100% accuracy on the limited test dataset provided.</p>
+</div>
+<div id="data-processing" class="section level1">
+<h1>Data processing</h1>
+<div id="data-cleaning" class="section level2">
+<h2>Data cleaning</h2>
+<p>First we need to download the train and test files.</p>
+<pre class="r"><code>download.file(&quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;, &quot;pml-training.csv&quot;, method = &quot;curl&quot;)
+download.file(&quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv&quot;, &quot;pml-testing.csv&quot;, method = &quot;curl&quot;)</code></pre>
+<p>Then we read the csv file into two data frames named “pml.training” and “pml.testing”.</p>
+<pre class="r"><code>pml.training.raw&lt;- read.csv(&quot;pml-training.csv&quot;)
+pml.testing.raw &lt;- read.csv(&quot;pml-testing.csv&quot;)</code></pre>
+<p>The training set consists in 19622 observations of 160 variables and the testing set consists in 20 observations of 160 variables. The “classe” variable is the dependent variable.</p>
+<pre class="r"><code>names(pml.training.raw)</code></pre>
+<pre><code>##   [1] &quot;X&quot;                        &quot;user_name&quot;               
+##   [3] &quot;raw_timestamp_part_1&quot;     &quot;raw_timestamp_part_2&quot;    
+##   [5] &quot;cvtd_timestamp&quot;           &quot;new_window&quot;              
+##   [7] &quot;num_window&quot;               &quot;roll_belt&quot;               
+##   [9] &quot;pitch_belt&quot;               &quot;yaw_belt&quot;                
+##  [11] &quot;total_accel_belt&quot;         &quot;kurtosis_roll_belt&quot;      
+##  [13] &quot;kurtosis_picth_belt&quot;      &quot;kurtosis_yaw_belt&quot;       
+##  [15] &quot;skewness_roll_belt&quot;       &quot;skewness_roll_belt.1&quot;    
+##  [17] &quot;skewness_yaw_belt&quot;        &quot;max_roll_belt&quot;           
+##  [19] &quot;max_picth_belt&quot;           &quot;max_yaw_belt&quot;            
+##  [21] &quot;min_roll_belt&quot;            &quot;min_pitch_belt&quot;          
+##  [23] &quot;min_yaw_belt&quot;             &quot;amplitude_roll_belt&quot;     
+##  [25] &quot;amplitude_pitch_belt&quot;     &quot;amplitude_yaw_belt&quot;      
+##  [27] &quot;var_total_accel_belt&quot;     &quot;avg_roll_belt&quot;           
+##  [29] &quot;stddev_roll_belt&quot;         &quot;var_roll_belt&quot;           
+##  [31] &quot;avg_pitch_belt&quot;           &quot;stddev_pitch_belt&quot;       
+##  [33] &quot;var_pitch_belt&quot;           &quot;avg_yaw_belt&quot;            
+##  [35] &quot;stddev_yaw_belt&quot;          &quot;var_yaw_belt&quot;            
+##  [37] &quot;gyros_belt_x&quot;             &quot;gyros_belt_y&quot;            
+##  [39] &quot;gyros_belt_z&quot;             &quot;accel_belt_x&quot;            
+##  [41] &quot;accel_belt_y&quot;             &quot;accel_belt_z&quot;            
+##  [43] &quot;magnet_belt_x&quot;            &quot;magnet_belt_y&quot;           
+##  [45] &quot;magnet_belt_z&quot;            &quot;roll_arm&quot;                
+##  [47] &quot;pitch_arm&quot;                &quot;yaw_arm&quot;                 
+##  [49] &quot;total_accel_arm&quot;          &quot;var_accel_arm&quot;           
+##  [51] &quot;avg_roll_arm&quot;             &quot;stddev_roll_arm&quot;         
+##  [53] &quot;var_roll_arm&quot;             &quot;avg_pitch_arm&quot;           
+##  [55] &quot;stddev_pitch_arm&quot;         &quot;var_pitch_arm&quot;           
+##  [57] &quot;avg_yaw_arm&quot;              &quot;stddev_yaw_arm&quot;          
+##  [59] &quot;var_yaw_arm&quot;              &quot;gyros_arm_x&quot;             
+##  [61] &quot;gyros_arm_y&quot;              &quot;gyros_arm_z&quot;             
+##  [63] &quot;accel_arm_x&quot;              &quot;accel_arm_y&quot;             
+##  [65] &quot;accel_arm_z&quot;              &quot;magnet_arm_x&quot;            
+##  [67] &quot;magnet_arm_y&quot;             &quot;magnet_arm_z&quot;            
+##  [69] &quot;kurtosis_roll_arm&quot;        &quot;kurtosis_picth_arm&quot;      
+##  [71] &quot;kurtosis_yaw_arm&quot;         &quot;skewness_roll_arm&quot;       
+##  [73] &quot;skewness_pitch_arm&quot;       &quot;skewness_yaw_arm&quot;        
+##  [75] &quot;max_roll_arm&quot;             &quot;max_picth_arm&quot;           
+##  [77] &quot;max_yaw_arm&quot;              &quot;min_roll_arm&quot;            
+##  [79] &quot;min_pitch_arm&quot;            &quot;min_yaw_arm&quot;             
+##  [81] &quot;amplitude_roll_arm&quot;       &quot;amplitude_pitch_arm&quot;     
+##  [83] &quot;amplitude_yaw_arm&quot;        &quot;roll_dumbbell&quot;           
+##  [85] &quot;pitch_dumbbell&quot;           &quot;yaw_dumbbell&quot;            
+##  [87] &quot;kurtosis_roll_dumbbell&quot;   &quot;kurtosis_picth_dumbbell&quot; 
+##  [89] &quot;kurtosis_yaw_dumbbell&quot;    &quot;skewness_roll_dumbbell&quot;  
+##  [91] &quot;skewness_pitch_dumbbell&quot;  &quot;skewness_yaw_dumbbell&quot;   
+##  [93] &quot;max_roll_dumbbell&quot;        &quot;max_picth_dumbbell&quot;      
+##  [95] &quot;max_yaw_dumbbell&quot;         &quot;min_roll_dumbbell&quot;       
+##  [97] &quot;min_pitch_dumbbell&quot;       &quot;min_yaw_dumbbell&quot;        
+##  [99] &quot;amplitude_roll_dumbbell&quot;  &quot;amplitude_pitch_dumbbell&quot;
+## [101] &quot;amplitude_yaw_dumbbell&quot;   &quot;total_accel_dumbbell&quot;    
+## [103] &quot;var_accel_dumbbell&quot;       &quot;avg_roll_dumbbell&quot;       
+## [105] &quot;stddev_roll_dumbbell&quot;     &quot;var_roll_dumbbell&quot;       
+## [107] &quot;avg_pitch_dumbbell&quot;       &quot;stddev_pitch_dumbbell&quot;   
+## [109] &quot;var_pitch_dumbbell&quot;       &quot;avg_yaw_dumbbell&quot;        
+## [111] &quot;stddev_yaw_dumbbell&quot;      &quot;var_yaw_dumbbell&quot;        
+## [113] &quot;gyros_dumbbell_x&quot;         &quot;gyros_dumbbell_y&quot;        
+## [115] &quot;gyros_dumbbell_z&quot;         &quot;accel_dumbbell_x&quot;        
+## [117] &quot;accel_dumbbell_y&quot;         &quot;accel_dumbbell_z&quot;        
+## [119] &quot;magnet_dumbbell_x&quot;        &quot;magnet_dumbbell_y&quot;       
+## [121] &quot;magnet_dumbbell_z&quot;        &quot;roll_forearm&quot;            
+## [123] &quot;pitch_forearm&quot;            &quot;yaw_forearm&quot;             
+## [125] &quot;kurtosis_roll_forearm&quot;    &quot;kurtosis_picth_forearm&quot;  
+## [127] &quot;kurtosis_yaw_forearm&quot;     &quot;skewness_roll_forearm&quot;   
+## [129] &quot;skewness_pitch_forearm&quot;   &quot;skewness_yaw_forearm&quot;    
+## [131] &quot;max_roll_forearm&quot;         &quot;max_picth_forearm&quot;       
+## [133] &quot;max_yaw_forearm&quot;          &quot;min_roll_forearm&quot;        
+## [135] &quot;min_pitch_forearm&quot;        &quot;min_yaw_forearm&quot;         
+## [137] &quot;amplitude_roll_forearm&quot;   &quot;amplitude_pitch_forearm&quot; 
+## [139] &quot;amplitude_yaw_forearm&quot;    &quot;total_accel_forearm&quot;     
+## [141] &quot;var_accel_forearm&quot;        &quot;avg_roll_forearm&quot;        
+## [143] &quot;stddev_roll_forearm&quot;      &quot;var_roll_forearm&quot;        
+## [145] &quot;avg_pitch_forearm&quot;        &quot;stddev_pitch_forearm&quot;    
+## [147] &quot;var_pitch_forearm&quot;        &quot;avg_yaw_forearm&quot;         
+## [149] &quot;stddev_yaw_forearm&quot;       &quot;var_yaw_forearm&quot;         
+## [151] &quot;gyros_forearm_x&quot;          &quot;gyros_forearm_y&quot;         
+## [153] &quot;gyros_forearm_z&quot;          &quot;accel_forearm_x&quot;         
+## [155] &quot;accel_forearm_y&quot;          &quot;accel_forearm_z&quot;         
+## [157] &quot;magnet_forearm_x&quot;         &quot;magnet_forearm_y&quot;        
+## [159] &quot;magnet_forearm_z&quot;         &quot;classe&quot;</code></pre>
+<p>We may note that many of the 159 predictors are missing most of the observations.</p>
+<pre class="r"><code>sum(complete.cases(pml.training.raw))</code></pre>
+<pre><code>## [1] 406</code></pre>
+<p>So, to tidy the datasets up we remove the columns containing NA values.</p>
+<pre class="r"><code>pml.training.raw &lt;- pml.training.raw[, colSums(is.na(pml.training.raw)) == 0]
+pml.testing.raw &lt;- pml.testing.raw[, colSums(is.na(pml.testing.raw)) == 0]</code></pre>
+<p>We may also note that some of the variables in the dataset do not come from accelerometer measurements but only record experimental setup or participants’ data. Consequently we will treat those as potential confounders, so we discard the variables “X”, “user_name”, “raw_timestamp_part1”, “raw_timestamp_part2”, “cvtd_timestamp”, “new_window” and “num_window”.</p>
+<pre class="r"><code>pml.training.raw &lt;- pml.training.raw[, !grepl(&quot;X|user_name|timestamp|window&quot;, colnames(pml.training.raw))]
+pml.testing.raw &lt;- pml.testing.raw[, !grepl(&quot;X|user_name|timestamp|window&quot;, colnames(pml.testing.raw))]</code></pre>
+<p>Additionnaly the data coming with the column “new_window” identifies a pre-determined time window to calculate the features of the distributions of the measurements. When set to “yes”, the features fill the columns of max/min value, averag, skewness, etc. Since the test set has only 20 observations to predict with, these columns cannot be calculated in the testing phase and so are dropped in the training phase.</p>
+<pre class="r"><code>pml.training.tidy &lt;- pml.training.raw[, !grepl(&quot;^max|^min|^ampl|^var|^avg|^stdd|^ske|^kurt&quot;, colnames(pml.training.raw))]
+pml.testing.tidy &lt;- pml.testing.raw[, !grepl(&quot;^max|^min|^ampl|^var|^avg|^stdd|^ske|^kurt&quot;, colnames(pml.testing.raw))]</code></pre>
+</div>
+<div id="data-slicing" class="section level2">
+<h2>Data slicing</h2>
+<p>We split the tidy training dataset into a pure training dataset (70% of the observations) and a validation dataset (30% of the observations) to do this we need to load the “caret” package. We will use the validation dataset to perform cross validation when developing our model. To ensure reproducibility we set a random seed beforehand.</p>
+<pre class="r"><code>library(caret)</code></pre>
+<pre><code>## Loading required package: lattice
+## Loading required package: ggplot2</code></pre>
+<pre class="r"><code>set.seed(23222)
+inTrain &lt;- createDataPartition(y = pml.training.tidy$classe, p = 0.7, list = FALSE)
+pml.train &lt;- pml.training.tidy[inTrain, ]
+pml.valid &lt;- pml.training.tidy[-inTrain, ]
+pml.test &lt;- pml.testing.tidy</code></pre>
+</div>
+</div>
+<div id="exploratory-analysis" class="section level1">
+<h1>Exploratory analysis</h1>
+<p>At this point our dataset consists in 53 variables wich is way better than our original dataset. To further reduce this number, we look at the correlations between the variables in our dataset.</p>
+<pre class="r"><code>pml.corr &lt;- cor(pml.train[, -53])
+library(corrplot)
+corrplot(pml.corr, method = &quot;color&quot;)</code></pre>
+<p><img src="Report_files/figure-html/unnamed-chunk-9.png" title="plot of chunk unnamed-chunk-9" alt="plot of chunk unnamed-chunk-9" width="960" /></p>
+<p>As we can see most predictors do not exhibit a high degree of correlation, however some variables are highly correlated.</p>
+<pre class="r"><code>corr.mat &lt;- abs(pml.corr)
+diag(corr.mat) &lt;- 0
+high.corr &lt;- which(corr.mat &gt; 0.8, arr.ind = TRUE)
+for (i in 1:nrow(high.corr)) {
+    print(names(pml.train)[high.corr[i, ]])
+}</code></pre>
+<pre><code>## [1] &quot;yaw_belt&quot;  &quot;roll_belt&quot;
+## [1] &quot;total_accel_belt&quot; &quot;roll_belt&quot;       
+## [1] &quot;accel_belt_y&quot; &quot;roll_belt&quot;   
+## [1] &quot;accel_belt_z&quot; &quot;roll_belt&quot;   
+## [1] &quot;accel_belt_x&quot; &quot;pitch_belt&quot;  
+## [1] &quot;magnet_belt_x&quot; &quot;pitch_belt&quot;   
+## [1] &quot;roll_belt&quot; &quot;yaw_belt&quot; 
+## [1] &quot;roll_belt&quot;        &quot;total_accel_belt&quot;
+## [1] &quot;accel_belt_y&quot;     &quot;total_accel_belt&quot;
+## [1] &quot;accel_belt_z&quot;     &quot;total_accel_belt&quot;
+## [1] &quot;pitch_belt&quot;   &quot;accel_belt_x&quot;
+## [1] &quot;magnet_belt_x&quot; &quot;accel_belt_x&quot; 
+## [1] &quot;roll_belt&quot;    &quot;accel_belt_y&quot;
+## [1] &quot;total_accel_belt&quot; &quot;accel_belt_y&quot;    
+## [1] &quot;accel_belt_z&quot; &quot;accel_belt_y&quot;
+## [1] &quot;roll_belt&quot;    &quot;accel_belt_z&quot;
+## [1] &quot;total_accel_belt&quot; &quot;accel_belt_z&quot;    
+## [1] &quot;accel_belt_y&quot; &quot;accel_belt_z&quot;
+## [1] &quot;pitch_belt&quot;    &quot;magnet_belt_x&quot;
+## [1] &quot;accel_belt_x&quot;  &quot;magnet_belt_x&quot;
+## [1] &quot;gyros_arm_y&quot; &quot;gyros_arm_x&quot;
+## [1] &quot;gyros_arm_x&quot; &quot;gyros_arm_y&quot;
+## [1] &quot;magnet_arm_x&quot; &quot;accel_arm_x&quot; 
+## [1] &quot;accel_arm_x&quot;  &quot;magnet_arm_x&quot;
+## [1] &quot;magnet_arm_z&quot; &quot;magnet_arm_y&quot;
+## [1] &quot;magnet_arm_y&quot; &quot;magnet_arm_z&quot;
+## [1] &quot;accel_dumbbell_x&quot; &quot;pitch_dumbbell&quot;  
+## [1] &quot;accel_dumbbell_z&quot; &quot;yaw_dumbbell&quot;    
+## [1] &quot;gyros_dumbbell_z&quot; &quot;gyros_dumbbell_x&quot;
+## [1] &quot;gyros_forearm_z&quot;  &quot;gyros_dumbbell_x&quot;
+## [1] &quot;gyros_dumbbell_x&quot; &quot;gyros_dumbbell_z&quot;
+## [1] &quot;gyros_forearm_z&quot;  &quot;gyros_dumbbell_z&quot;
+## [1] &quot;pitch_dumbbell&quot;   &quot;accel_dumbbell_x&quot;
+## [1] &quot;yaw_dumbbell&quot;     &quot;accel_dumbbell_z&quot;
+## [1] &quot;gyros_forearm_z&quot; &quot;gyros_forearm_y&quot;
+## [1] &quot;gyros_dumbbell_x&quot; &quot;gyros_forearm_z&quot; 
+## [1] &quot;gyros_dumbbell_z&quot; &quot;gyros_forearm_z&quot; 
+## [1] &quot;gyros_forearm_y&quot; &quot;gyros_forearm_z&quot;</code></pre>
+<p>To cope with these highly correlated predictors we will use Principal Component Analysis (PCA) to pick the combination of predictors that captures the most information possible.</p>
+</div>
+<div id="preprocessing" class="section level1">
+<h1>Preprocessing</h1>
+<p>As mentioned before we use PCA on the training, validation and testing datasets to further reduce the number of predictors and the noise.</p>
+<pre class="r"><code>preProc.pca &lt;- preProcess(pml.train[, -53], method  = &quot;pca&quot;, thresh = 0.95)
+pml.train.pca &lt;- predict(preProc.pca, pml.train[, -53])
+pml.valid.pca &lt;- predict(preProc.pca, pml.valid[, -53])
+pml.test.pca &lt;- predict(preProc.pca, pml.test[, -53])
+print(preProc.pca)</code></pre>
+<pre><code>## 
+## Call:
+## preProcess.default(x = pml.train[, -53], method = &quot;pca&quot;, thresh = 0.95)
+## 
+## Created from 13737 samples and 52 variables
+## Pre-processing: principal component signal extraction, scaled, centered 
+## 
+## PCA needed 25 components to capture 95 percent of the variance</code></pre>
+</div>
+<div id="modeling" class="section level1">
+<h1>Modeling</h1>
+<div id="model-fitting" class="section level2">
+<h2>Model fitting</h2>
+<p>Our algorithm of choice to build a predictive model for activity recognition of weight lifting exercises will be the random forest algorithm as it deals naturally with non-linearity, it automatically selects which variables are more important and is generally robust to outliers and correlated covariates. We chose to use a 5-fold cross validation method when applying the random forest algorithm.</p>
+<pre class="r"><code>modFit &lt;- train(pml.train$classe ~ ., method = &quot;rf&quot;, data = pml.train.pca, trControl = trainControl(method = &quot;cv&quot;, 5))
+modFit</code></pre>
+<pre><code>## Random Forest 
+## 
+## 13737 samples
+##    24 predictors
+##     5 classes: &#39;A&#39;, &#39;B&#39;, &#39;C&#39;, &#39;D&#39;, &#39;E&#39; 
+## 
+## No pre-processing
+## Resampling: Cross-Validated (5 fold) 
+## 
+## Summary of sample sizes: 10989, 10991, 10990, 10989, 10989 
+## 
+## Resampling results across tuning parameters:
+## 
+##   mtry  Accuracy  Kappa  Accuracy SD  Kappa SD
+##   2     1         1      0.004        0.005   
+##   10    1         1      0.005        0.006   
+##   20    1         0.9    0.004        0.005   
+## 
+## Accuracy was used to select the optimal model using  the largest value.
+## The final value used for the model was mtry = 2.</code></pre>
+<p>Now we may review the relative importance of the resulting principal components of the trained model “modFit”.</p>
+<pre class="r"><code>varImpPlot(modFit$finalModel, sort = TRUE, main = &quot;Relative importance of PCs&quot;)</code></pre>
+<p><img src="Report_files/figure-html/unnamed-chunk-13.png" title="plot of chunk unnamed-chunk-13" alt="plot of chunk unnamed-chunk-13" width="960" /></p>
+</div>
+<div id="model-performance-on-validation-dataset" class="section level2">
+<h2>Model performance on validation dataset</h2>
+<p>Now we are able to estimate the performance of the model on the validation dataset.</p>
+<pre class="r"><code>pml.pred.valid &lt;- predict(modFit, pml.valid.pca)
+confusionMatrix(pml.valid$classe, pml.pred.valid)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1658    5    6    3    2
+##          B   16 1109   14    0    0
+##          C    1   13 1007    5    0
+##          D    2    0   38  922    2
+##          E    2   11    5    3 1061
+## 
+## Overall Statistics
+##                                         
+##                Accuracy : 0.978         
+##                  95% CI : (0.974, 0.982)
+##     No Information Rate : 0.285         
+##     P-Value [Acc &gt; NIR] : &lt;2e-16        
+##                                         
+##                   Kappa : 0.972         
+##  Mcnemar&#39;s Test P-Value : NA            
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity             0.987    0.975    0.941    0.988    0.996
+## Specificity             0.996    0.994    0.996    0.992    0.996
+## Pos Pred Value          0.990    0.974    0.981    0.956    0.981
+## Neg Pred Value          0.995    0.994    0.987    0.998    0.999
+## Prevalence              0.285    0.193    0.182    0.159    0.181
+## Detection Rate          0.282    0.188    0.171    0.157    0.180
+## Detection Prevalence    0.284    0.194    0.174    0.164    0.184
+## Balanced Accuracy       0.992    0.984    0.969    0.990    0.996</code></pre>
+<p>The out-of-sample error is the complementary to one of the model’s accuracy.</p>
+<pre class="r"><code>OoSE &lt;- 1 - as.numeric(confusionMatrix(pml.valid$classe, pml.pred.valid)$overall[1])
+OoSE</code></pre>
+<pre><code>## [1] 0.02175</code></pre>
+<p>We may conclude that the estimated out-of-sample error based on our model applied to the validation dataset is 2.175% which is pretty good.</p>
+</div>
+<div id="predicted-results" class="section level2">
+<h2>Predicted results</h2>
+<p>We are now able to run our model against the test dataset and display the predicted results.</p>
+<pre class="r"><code>pml.pred.test &lt;- predict(modFit, pml.test.pca)
+pml.pred.test</code></pre>
+<pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
+## Levels: A B C D E</code></pre>
+</div>
+<div id="model-performance-on-test-dataset" class="section level2">
+<h2>Model performance on test dataset</h2>
+<p>Our model achieves a 100% accuracy on the limited test set provided.</p>
+</div>
+</div>
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+$(document).ready(function () {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+});
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with --self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
