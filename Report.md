@@ -264,7 +264,7 @@ print(preProc.pca)
 
 ## Model fitting
 
-Our algorithm of choice to build a predictive model for activity recognition of weight lifting exercises will be the random forest algorithm as it deals naturally with non-linearity, it automatically selects which variables are more important and is generally robust to outliers and correlated covariates. We chose to use a 5-fold cross validation method when applying the random forest algorithm.
+Our algorithm of choice to build a predictive model for activity recognition of weight lifting exercises will be the random forest algorithm as it deals naturally with non-linearity, it automatically selects which variables are more important and is generally robust to outliers and correlated covariates. So we may expect a relatively low out-of-sample error (lower than 5%). We chose to use a 5-fold cross validation method when applying the random forest algorithm.
 
 
 ```r
